@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TruthLens - Analysis Console</title>
+    <style>
+        :root {
+            --bg: #f6f2ea;
+            --panel: #fffdf8;
+            --ink: #1c2430;
+            --muted: #5a6576;
+            --line: #ddd4c6;
+            --accent: #0f766e;
+            --accent-soft: #d7f2ef;
+            --danger: #b42318;
+            --danger-soft: #fde3e1;
+            --safe: #166534;
+            --safe-soft: #def5e6;
+            --warn: #92400e;
+            --warn-soft: #ffedd5;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(900px 500px at 8% 2%, #fbead1, transparent 70%),
+                radial-gradient(800px 500px at 100% 0%, #d8ece9, transparent 72%),
+                var(--bg);
+            display: grid;
+            place-items: center;
+            padding: 28px 14px;
+        }
+
+        .container {
+            width: min(920px, 100%);
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(25, 40, 54, 0.09);
+            overflow: hidden;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 22px 24px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(92deg, #faf1df 0%, #e9f6f4 100%);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(1.3rem, 3vw, 1.85rem);
+            letter-spacing: 0.02em;
+        }
+
+        .sub {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.94rem;
+        }
+
+        .controls {
+            padding: 20px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            border-bottom: 1px solid var(--line);
+        }
+
+        input[type="file"] {
+            max-width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px;
+            background: #fff;
+        }
+
+        button {
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 10px 18px;
+            background: var(--accent);
+            color: #fff;
+            transition: transform 0.12s ease, filter 0.12s ease;
+        }
+
+        button:hover {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .output {
+            padding: 22px 24px 26px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            width: fit-content;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status.loading { color: var(--warn); border-color: #f3c891; background: var(--warn-soft); }
+        .status.fake { color: var(--danger); border-color: #f2b3ae; background: var(--danger-soft); }
+        .status.real { color: var(--safe); border-color: #a8d6b8; background: var(--safe-soft); }
+        .status.uncertain { color: #1d4d8f; border-color: #b9d6ff; background: #e9f2ff; }
+        .status.error { color: #4c1d95; border-color: #d7c6ff; background: #f2ecff; }
+
+        .summary {
+            margin: 0;
+            font-size: 1.05rem;
+            line-height: 1.5;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .card {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 12px;
+            background: #fff;
+        }
+
+        .card h3 {
+            margin: 0 0 8px;
+            font-size: 0.9rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .metric {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .bar {
+            height: 11px;
+            background: #f0ece4;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid #e6ddcf;
+            margin-top: 8px;
+        }
+
+        .bar > span {
+            display: block;
+            height: 100%;
+            transition: width 0.35s ease;
+        }
+
+        .bar-fake > span { background: linear-gradient(90deg, #dc2626, #f97316); }
+        .bar-real > span { background: linear-gradient(90deg, #0f766e, #16a34a); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.94rem;
+        }
+
+        th, td {
+            padding: 8px 6px;
+            border-bottom: 1px dashed #e3daca;
+            text-align: left;
+        }
+
+        th { color: var(--muted); font-weight: 700; }
+
+        .model-pct {
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+        }
+
+        details {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        summary {
+            cursor: pointer;
+            padding: 10px 12px;
+            font-weight: 700;
+            color: var(--muted);
+            background: #faf7f0;
+        }
+
+        pre {
+            margin: 0;
+            padding: 10px 12px;
+            font-size: 0.84rem;
+            max-height: 220px;
+            overflow: auto;
+            background: #fff;
+        }
+
+        .empty {
+            border: 1px dashed var(--line);
+            border-radius: 12px;
+            padding: 16px;
+            color: var(--muted);
+            background: #fcfaf5;
+        }
+
+        @media (max-width: 720px) {
+            .grid { grid-template-columns: 1fr; }
+            .header, .controls, .output { padding-left: 14px; padding-right: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>TruthLens Analysis Console</h1>
+                <p class="sub">Raw technical API response viewer</p>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input type="file" id="mediaFile" accept="image/*,video/*" />
+            <button id="analyzeBtn" onclick="analyze()">Run Analysis</button>
+        </div>
+
+        <div class="output">
+            <details id="rawCard" open>
+                <summary>Technical JSON response</summary>
+                <pre id="rawJson"></pre>
+            </details>
+        </div>
+    </div>
+
+    <script>
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const rawJson = document.getElementById('rawJson');
+
+        rawJson.textContent = JSON.stringify({
+            status: "waiting",
+            message: "Select an image or video file, then run analysis."
+        }, null, 2);
+
+        async function analyze() {
+            const fileInput = document.getElementById('mediaFile');
+            if (!fileInput.files.length) {
+                rawJson.textContent = JSON.stringify({ error: "No file selected" }, null, 2);
+                return;
+            }
+
+            analyzeBtn.disabled = true;
+            rawJson.textContent = JSON.stringify({ status: "analyzing" }, null, 2);
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            try {
+                const res = await fetch("http://localhost:8000/analyze", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const errorPayload = await res.json().catch(() => ({}));
+                    const detail = errorPayload.detail || `HTTP ${res.status}`;
+                    throw new Error(detail);
+                }
+
+                const data = await res.json();
+                rawJson.textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                rawJson.textContent = JSON.stringify({
+                    error: e.message || 'Server not running or invalid response.',
+                    hint: 'Start backend at http://localhost:8000.'
+                }, null, 2);
+            } finally {
+                analyzeBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
