@@ -77,7 +77,7 @@ Example:
 
 ```bash
 curl -X POST "http://localhost:8000/analyze" \
-  -F "file=@/absolute/path/to/sample.mp4"
+  -F "file=@./sample.mp4"
 ```
 
 Response fields include:
