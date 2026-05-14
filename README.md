@@ -46,7 +46,7 @@ From repository root:
 python -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-pip install -r /home/runner/work/detect/detect/truthlens/requirements.txt
+pip install -r truthlens/requirements.txt
 ```
 
 > Note: `ffmpeg-python` requires FFmpeg to be available on the system.
@@ -103,6 +103,6 @@ Default is `*` (all origins).
 
 Open:
 
-- `/home/runner/work/detect/detect/truthlens/test_ui.html`
+- `truthlens/test_ui.html`
 
 It posts files to `http://localhost:8000/analyze` and displays raw JSON responses.
